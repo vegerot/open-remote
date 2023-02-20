@@ -13,8 +13,8 @@ Inspired by [ruanyl/vim-gh-line](https://github.com/ruanyl/vim-gh-line)
 1. clone this repo into your runtimepath (e.g. `~/.local/share/nvim/site/pack/external/start/`)
 
 ```sh
-$ mkdir -p ~/.local/share/nvim/site/pack/external/start/open-remote/plugin/
-$ clone ssh://git@github.com/vegerot/open-remote ~/.local/share/nvim/site/pack/external/start/open-remote/plugin/open-remote
+$ mkdir -p ~/.local/share/nvim/site/pack/external/start/
+$ clone ssh://git@github.com/vegerot/open-remote ~/.local/share/nvim/site/pack/external/start/open-remote
 ```
 
 2. Add a shortcut for this command in your `init.vim`:
@@ -55,6 +55,7 @@ $ nvim open-remote.lua
 - detect if `ref` is pushed to remote.  If not, then find the most recent
   ref/branch that has been pushed and use that instead
 - support git
+- choose remote
 - Windows support
 - customize how to open browser (e.g. default browser)
 - `OpenBlame`
