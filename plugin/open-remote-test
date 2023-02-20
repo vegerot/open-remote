@@ -53,7 +53,6 @@ function test_with_repo_thats_not_cwd() {
 		# make repo without vcs
 		echo "running in: $tmp_dir_1"
 		cd $tmp_dir_1
-		printf 'goodbye' > notthis.txt
 
 		# make repo with vcs
 		echo "running in: $tmp_dir_2"

@@ -21,21 +21,8 @@ local function get_repo_url_from_sl_path (path)
 	return repo_url
 end
 
-local function get_remote_path_from_config(cwd)
-	-- TODO: prompt if multiple paths (or just use `default`?)
-	-- TODO: support git
-	local command = "sl paths default --cwd=" .. cwd
-	local handle = assert(io.popen(command))
-	local path = handle:read("*a")
-	handle:close()
-	-- remove trailing newline
-	local path_stripped_trailing_newline = string.sub(path, 0, string.len(path) - 1)
-	return path_stripped_trailing_newline
-end
-
--- Open the repo homepage.  This was made to start open-remote but shouldn't be used
 function Open_Repo()
-	local repo_path = get_remote_path_from_config()
+	local repo_path = sl("paths default", vim.fn.expand("%:p:h"))
 	local url = "https://" .. get_repo_url_from_sl_path(repo_path)
 	-- TODO: xdg-open
 	vim.cmd("!open " .. url)
@@ -60,24 +47,32 @@ function Open_File_Cmd(params)
 	return open_cmd .. " '" .. url .. "'"
 end
 
+
 local function strip_trailing_newline(str)
-	assert(string.sub(str, string.len(str)) == "\n")
-	return string.sub(str, 0, string.len(str) - 1)
+	if (string.sub(str, string.len(str)) == "\n") then
+		return string.sub(str, 0, string.len(str) - 1)
+	end
+	return str
+end
+
+local function sl(cmd, cwd)
+	return strip_trailing_newline(vim.fn.system("sl --cwd=" .. cwd .. " " .. cmd ))
 end
 
 local function get_params()
 	local absolute_filepath = vim.fn.expand("%:p")
 	local absolute_directory_path = vim.fn.expand("%:p:h")
-	local sl_cwd_argument = " --cwd=" .. absolute_directory_path
-	local repo_root = strip_trailing_newline(vim.fn.system('sl root ' .. sl_cwd_argument ))
+	local repo_root = sl('root', absolute_directory_path)
 	local line_number = vim.fn.line(".")
 	local os = strip_trailing_newline(vim.fn.system("uname"))
-	local remote_path = get_remote_path_from_config(absolute_directory_path)
+	-- TODO: prompt if multiple paths (or just use `default`?)
+	-- TODO: support git
+	local remote_path = sl("paths default", absolute_directory_path)
 	local sapling_remotebookmark_template = 'word(0,sub("\\w+/", "", remotebookmarks))'
 	-- use the remote branch name if it exists, otherwise use the commit hash
 	local sapling_ref_template = '{ifeq(remotebookmarks, "", "{node}",' .. sapling_remotebookmark_template .. ' )}'
 	-- TODO: check if commit is pushed, and if not fall back to `main` branch
-	local ref = (vim.fn.system('sl log -r . -T \'' .. sapling_ref_template .. "'" .. sl_cwd_argument ))
+	local ref = sl('log -r . -T \'' .. sapling_ref_template .. "'", absolute_directory_path)
 
 	return { ref = ref, repo_root = repo_root, line_number = line_number, os = os, remote_path = remote_path,
 		absolute_filepath = absolute_filepath }
