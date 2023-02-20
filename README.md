@@ -49,3 +49,16 @@ $ nvim open-remote.lua
 :OpenRepo
 " web browser should open to https://github.com/vegerot/dotfiles (or wherever you put this file)
 ```
+
+## TODO
+- add `CopyFile` (which copies the URL)
+- detect if `ref` is pushed to remote.  If not, then find the most recent
+  ref/branch that has been pushed and use that instead
+- support git
+- Windows support
+- customize how to open browser (e.g. default browser)
+- `OpenBlame`
+
+## Better project names
+- OpenTheSource
+- ForkShare
