@@ -1,4 +1,34 @@
 --- PLUGIN
+local function strip_trailing_newline(str)
+	if (string.sub(str, string.len(str)) == "\n") then
+		return string.sub(str, 0, string.len(str) - 1)
+	end
+	return str
+end
+
+local function sl(cmd, cwd)
+	return strip_trailing_newline(vim.fn.system("sl --cwd=" .. cwd .. " " .. cmd ))
+end
+
+local function get_params()
+	local absolute_filepath = vim.fn.expand("%:p")
+	local absolute_directory_path = vim.fn.expand("%:p:h")
+	local repo_root = sl('root', absolute_directory_path)
+	local line_number = vim.fn.line(".")
+	local os = strip_trailing_newline(vim.fn.system("uname"))
+	-- TODO: prompt if multiple paths (or just use `default`?)
+	-- TODO: support git
+	local remote_path = sl("paths default", absolute_directory_path)
+	local sapling_remotebookmark_template = 'word(0,sub("\\w+/", "", remotebookmarks))'
+	-- use the remote branch name if it exists, otherwise use the commit hash
+	local sapling_ref_template = '{ifeq(remotebookmarks, "", "{node}",' .. sapling_remotebookmark_template .. ' )}'
+	-- TODO: check if commit is pushed, and if not fall back to `main` branch
+	local ref = sl('log -r . -T \'' .. sapling_ref_template .. "'", absolute_directory_path)
+
+	return { ref = ref, repo_root = repo_root, line_number = line_number, os = os, remote_path = remote_path,
+		absolute_filepath = absolute_filepath }
+end
+
 local function get_repo_url_from_sl_path (path)
 	local function trim_to(str, pattern)
 		local start = string.find(str, pattern)
@@ -35,39 +65,9 @@ function Open_File_Cmd(params)
 	end
 
 	local relative_filepath = string.sub(absolute_filepath, string.len(repo_root) + 2)
-	local url = vim.fn.fnameescape("https://" .. get_repo_url_from_sl_path(remote_path) .. "/blob/" .. ref .. "/" .. relative_filepath .. "#L" .. line_number)
+	local url = vim.fn.fnameescape("https://" ..
+	get_repo_url_from_sl_path(remote_path) .. "/blob/" .. ref .. "/" .. relative_filepath .. "#L" .. line_number)
 	return open_cmd .. " '" .. url .. "'"
-end
-
-
-local function strip_trailing_newline(str)
-	if (string.sub(str, string.len(str)) == "\n") then
-		return string.sub(str, 0, string.len(str) - 1)
-	end
-	return str
-end
-
-local function sl(cmd, cwd)
-	return strip_trailing_newline(vim.fn.system("sl --cwd=" .. cwd .. " " .. cmd ))
-end
-
-local function get_params()
-	local absolute_filepath = vim.fn.expand("%:p")
-	local absolute_directory_path = vim.fn.expand("%:p:h")
-	local repo_root = sl('root', absolute_directory_path)
-	local line_number = vim.fn.line(".")
-	local os = strip_trailing_newline(vim.fn.system("uname"))
-	-- TODO: prompt if multiple paths (or just use `default`?)
-	-- TODO: support git
-	local remote_path = sl("paths default", absolute_directory_path)
-	local sapling_remotebookmark_template = 'word(0,sub("\\w+/", "", remotebookmarks))'
-	-- use the remote branch name if it exists, otherwise use the commit hash
-	local sapling_ref_template = '{ifeq(remotebookmarks, "", "{node}",' .. sapling_remotebookmark_template .. ' )}'
-	-- TODO: check if commit is pushed, and if not fall back to `main` branch
-	local ref = sl('log -r . -T \'' .. sapling_ref_template .. "'", absolute_directory_path)
-
-	return { ref = ref, repo_root = repo_root, line_number = line_number, os = os, remote_path = remote_path,
-		absolute_filepath = absolute_filepath }
 end
 
 function Get_open_file_cmd()
@@ -75,12 +75,12 @@ function Get_open_file_cmd()
 	return Open_File_Cmd(params)
 end
 
-local function open_file()
+function Open_file()
 	local cmd = Get_open_file_cmd()
 	print(cmd)
 	vim.cmd("!" .. cmd)
 end
-vim.api.nvim_create_user_command("OpenFile", open_file, {nargs=0})
+vim.api.nvim_create_user_command("OpenFile", Open_file, {nargs=0})
 
 --- TESTS
 local function test_get_repo_url_from_remote_path()
