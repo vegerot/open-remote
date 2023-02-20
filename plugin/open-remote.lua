@@ -21,10 +21,10 @@ local function get_repo_url_from_sl_path (path)
 	return repo_url
 end
 
-local function get_remote_path_from_config()
+local function get_remote_path_from_config(cwd)
 	-- TODO: prompt if multiple paths (or just use `default`?)
 	-- TODO: support git
-	local command = "sl paths default"
+	local command = "sl paths default --cwd=" .. cwd
 	local handle = assert(io.popen(command))
 	local path = handle:read("*a")
 	handle:close()
@@ -67,15 +67,17 @@ end
 
 local function get_params()
 	local absolute_filepath = vim.fn.expand("%:p")
-	local repo_root = strip_trailing_newline(vim.fn.system('sl root'))
+	local absolute_directory_path = vim.fn.expand("%:p:h")
+	local sl_cwd_argument = " --cwd=" .. absolute_directory_path
+	local repo_root = strip_trailing_newline(vim.fn.system('sl root ' .. sl_cwd_argument ))
 	local line_number = vim.fn.line(".")
 	local os = strip_trailing_newline(vim.fn.system("uname"))
-	local remote_path = get_remote_path_from_config()
+	local remote_path = get_remote_path_from_config(absolute_directory_path)
 	local sapling_remotebookmark_template = 'word(0,sub("\\w+/", "", remotebookmarks))'
 	-- use the remote branch name if it exists, otherwise use the commit hash
 	local sapling_ref_template = '{ifeq(remotebookmarks, "", "{node}",' .. sapling_remotebookmark_template .. ' )}'
 	-- TODO: check if commit is pushed, and if not fall back to `main` branch
-	local ref = (vim.fn.system('sl log -r . -T \'' .. sapling_ref_template .. "'"))
+	local ref = (vim.fn.system('sl log -r . -T \'' .. sapling_ref_template .. "'" .. sl_cwd_argument ))
 
 	return { ref = ref, repo_root = repo_root, line_number = line_number, os = os, remote_path = remote_path,
 		absolute_filepath = absolute_filepath }
@@ -97,10 +99,6 @@ vim.api.nvim_create_user_command("OpenFile", open_file, {nargs=0})
 local function test_get_repo_url_from_remote_path()
 	Assert_equals(get_repo_url_from_sl_path("ssh://git@gecgithub01.walmart.com/ce-orchestration/ce-smartlists.git"), "gecgithub01.walmart.com/ce-orchestration/ce-smartlists")
 	Assert_equals(get_repo_url_from_sl_path("https://github.com/facebook/sapling.git"), "github.com/facebook/sapling")
-end
-
-local function test_get_remote_paths_from_config()
-	Assert_equals(get_remote_path_from_config(), "ssh://git@github.com/vegerot/open-remote.git")
 end
 
 local function test_open_file_helper()
@@ -140,7 +138,6 @@ vim.api.nvim_create_user_command("OpenRemoteTestE2e2", e2e_test_2, {nargs=0})
 -- run tests automatically: `nmap <leader>t :w \| source % \| OpenRemoteTest <CR>`
 local function test()
 	test_get_repo_url_from_remote_path()
-	test_get_remote_paths_from_config()
 	test_open_file_helper()
 	print("✅")
 end

@@ -45,6 +45,32 @@ function test_commit_with_multiple_bookmarks() {
 	nvim -u NONE foo.txt -Vvim.log +"source $PLUGIN_PATH" +2 +"OpenRemoteTestE2e"
 }
 
+function test_with_repo_thats_not_cwd() {
+	printf "\ntest_with_repo_thats_not_cwd\n"
+	local tmp_dir_1=$(mktemp -d)
+	local tmp_dir_2=$(mktemp -d)
+	function setup_e2e_test(){
+		# make repo without vcs
+		echo "running in: $tmp_dir_1"
+		cd $tmp_dir_1
+		printf 'goodbye' > notthis.txt
+
+		# make repo with vcs
+		echo "running in: $tmp_dir_2"
+		cd $tmp_dir_2
+		sl init --git .
+		printf 'hello\nworld\ndufus' > foo.txt
+		sl add foo.txt
+		sl commit -m lol
+		sl paths --add default ssh://git@github.com/testuser/testrepo.git
+		sl debugremotebookmark main .
+
+		cd $tmp_dir_1
+	}
+	setup_e2e_test
+	nvim -u NONE $tmp_dir_2/foo.txt -Vvim.log +"source $PLUGIN_PATH" +2 +"OpenRemoteTestE2e"
+}
+
 function e2e_test_2() {
 	printf "\ne2e_test_2\n"
 	function setup_e2e_test(){
@@ -65,6 +91,7 @@ test() {
 	unit_tests
 	e2e_test_1
 	test_commit_with_multiple_bookmarks
+	test_with_repo_thats_not_cwd
 	e2e_test_2
 
 	printf "\n\n✅\n"
