@@ -21,14 +21,6 @@ local function get_repo_url_from_sl_path (path)
 	return repo_url
 end
 
-function Open_Repo()
-	local repo_path = sl("paths default", vim.fn.expand("%:p:h"))
-	local url = "https://" .. get_repo_url_from_sl_path(repo_path)
-	-- TODO: xdg-open
-	vim.cmd("!open " .. url)
-end
-vim.api.nvim_create_user_command("OpenRepo", Open_Repo, {nargs=0})
-
 function Open_File_Cmd(params)
 	local absolute_filepath = params.absolute_filepath
 	local repo_root = params.repo_root
