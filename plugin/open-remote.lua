@@ -71,9 +71,9 @@ local function get_params()
 	local line_number = vim.fn.line(".")
 	local os = strip_trailing_newline(vim.fn.system("uname"))
 	local remote_path = get_remote_path_from_config()
-	local sapling_remotebookmark_template = 'sub("remote/", "", remotebookmarks)'
+	local sapling_remotebookmark_template = 'word(0,sub("\\w+/", "", remotebookmarks))'
 	-- use the remote branch name if it exists, otherwise use the commit hash
-	local sapling_ref_template = '{ifeq(' .. sapling_remotebookmark_template .. ', "", "{node}",' .. sapling_remotebookmark_template .. ' )}'
+	local sapling_ref_template = '{ifeq(remotebookmarks, "", "{node}",' .. sapling_remotebookmark_template .. ' )}'
 	-- TODO: check if commit is pushed, and if not fall back to `main` branch
 	local ref = (vim.fn.system('sl log -r . -T \'' .. sapling_ref_template .. "'"))
 
@@ -81,13 +81,13 @@ local function get_params()
 		absolute_filepath = absolute_filepath }
 end
 
-local function get_cmd()
+function Get_open_file_cmd()
 	local params = get_params()
 	return Open_File_Cmd(params)
 end
 
 local function open_file()
-	local cmd = get_cmd()
+	local cmd = Get_open_file_cmd()
 	print(cmd)
 	vim.cmd("!" .. cmd)
 end
@@ -117,8 +117,8 @@ end
 
 -- run with `open-remote-test` script
 local function e2e_test()
-	local cmd = get_cmd()
-	Assert_equals(cmd,  "xdg-open 'https://github.com/testuser/testrepo/blob/debugupstream/foo.txt\\#L2'")
+	local cmd = Get_open_file_cmd()
+	Assert_equals(cmd,  "xdg-open 'https://github.com/testuser/testrepo/blob/main/foo.txt\\#L2'")
 	-- for some reason neovim (libuv in particular) crashes when using `vim.cmd("quit")`
 	os.exit()
 end
@@ -126,7 +126,7 @@ vim.api.nvim_create_user_command("OpenRemoteTestE2e", e2e_test, {nargs=0})
 
 -- run with `open-remote-test` script
 local function e2e_test_2()
-	local cmd = get_cmd()
+	local cmd = Get_open_file_cmd()
 	local want = "xdg--open 'https://github.com/testuser/testrepo/blob/(%x+)/foo.txt\\#L2'"
 	local _, _, maybe_match = string.find(cmd, want)
 	assert(maybe_match ~= nil)

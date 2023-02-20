@@ -8,9 +8,9 @@ PLUGIN_PATH="$PATH_OF_THIS_FILE/open-remote.lua"
 function unit_tests() {
 	nvim -u NONE +"source $PLUGIN_PATH" +"lua Open_Remote_Test()"
 }
-unit_tests
 
 function e2e_test_1() {
+	printf "\ne2e_test_1\n"
 	function setup_e2e_test(){
 		local tmp_dir=$(mktemp -d)
 		echo "running in: $tmp_dir"
@@ -20,15 +20,33 @@ function e2e_test_1() {
 		sl add foo.txt
 		sl commit -m lol
 		sl paths --add default ssh://git@github.com/testuser/testrepo.git
-		sl debugremotebookmark upstream .
+		sl debugremotebookmark main .
 	}
 	setup_e2e_test
 	nvim -u NONE foo.txt -Vvim.log +"source $PLUGIN_PATH" +2 +"OpenRemoteTestE2e"
 }
 
-e2e_test_1
+function test_commit_with_multiple_bookmarks() {
+	printf "\ntest_commit_with_multiple_bookmarks\n"
+	function setup_e2e_test(){
+		local tmp_dir=$(mktemp -d)
+		echo "running in: $tmp_dir"
+		cd $tmp_dir
+		sl init --git .
+		printf 'hello\nworld\ndufus' > foo.txt
+		sl add foo.txt
+		sl commit -m lol
+		sl paths --add upstream ssh://git@github.com/upstream_repo/testrepo.git
+		sl debugremotebookmark upstreammain .
+		sl paths --add default ssh://git@github.com/testuser/testrepo.git
+		sl debugremotebookmark main .
+	}
+	setup_e2e_test
+	nvim -u NONE foo.txt -Vvim.log +"source $PLUGIN_PATH" +2 +"OpenRemoteTestE2e"
+}
 
 function e2e_test_2() {
+	printf "\ne2e_test_2\n"
 	function setup_e2e_test(){
 		local tmp_dir=$(mktemp -d)
 		echo "running in: $tmp_dir"
@@ -42,5 +60,13 @@ function e2e_test_2() {
 	setup_e2e_test
 	nvim -u NONE foo.txt +"source $PLUGIN_PATH" +2 +"OpenRemoteTestE2e2"
 }
-e2e_test_2
 
+test() {
+	unit_tests
+	e2e_test_1
+	test_commit_with_multiple_bookmarks
+	e2e_test_2
+
+	printf "\n\n✅\n"
+}
+test
