@@ -14,7 +14,7 @@ Inspired by [ruanyl/vim-gh-line](https://github.com/ruanyl/vim-gh-line)
 
 ```sh
 $ mkdir -p ~/.local/share/nvim/site/pack/external/start/open-remote/plugin/
-$ clone ssh://git@github.com/vegerot/open-remote ~/.local/share/nvim/site/pack/external/start/open-remote/plugin/
+$ clone ssh://git@github.com/vegerot/open-remote ~/.local/share/nvim/site/pack/external/start/open-remote/plugin/open-remote
 ```
 
 2. Add a shortcut for this command in your `init.vim`:
@@ -28,7 +28,7 @@ nmap <leader>op :OpenFile
 2. add to your plugins in `init.vim`
 
 ```vim
-Plug 'vegerot/open-remote`
+Plug 'vegerot/open-remote'
 ```
 
 
