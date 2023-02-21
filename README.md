@@ -51,7 +51,9 @@ $ nvim open-remote.lua
 ```
 
 ## TODO
+(in approximately the order of priority)
 - add `CopyFile` (which copies the URL)
+- support ranges (can visual select multiple lines and open that range)
 - detect if `ref` is pushed to remote.  If not, then find the most recent
   ref/branch that has been pushed and use that instead
 - support git
