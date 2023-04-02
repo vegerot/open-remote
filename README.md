@@ -21,6 +21,7 @@ $ clone ssh://git@github.com/vegerot/open-remote ~/.local/share/nvim/site/pack/e
 
 ```vim
 nmap <leader>op :OpenFile
+vmap <leader>op :OpenFile "for selecting ranges of lines
 ```
 
 ### vim-plug

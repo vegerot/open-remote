@@ -86,7 +86,27 @@ function e2e_test_2() {
 	nvim -u NONE foo.txt +"source $PLUGIN_PATH" +2 +"OpenRemoteTestE2e2"
 }
 
+function test_visual_select_range() {
+	printf "\ntest_visual_select_range\n"
+	function setup_e2e_test(){
+		local tmp_dir=$(mktemp -d)
+		echo "running in: $tmp_dir"
+		cd $tmp_dir
+		sl init --git .
+		printf 'hello\nworld\ndufus\nfourth' > foo.txt
+		sl add foo.txt
+		sl commit -m lol
+		sl paths --add default ssh://git@github.com/testuser/testrepo.git
+		sl debugremotebookmark main .
+	}
+	setup_e2e_test
+	# open file to line 2, select lines 2-3, open remote
+	nvim -u NONE foo.txt +"source $PLUGIN_PATH" +2 +'execute "norm Vjj:OpenRemoteTestE2eVisualSelectRange\<CR>"'
+}
+
 test() {
+	set -x
+	test_visual_select_range
 	unit_tests
 	e2e_test_1
 	test_commit_with_multiple_bookmarks
