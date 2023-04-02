@@ -55,18 +55,36 @@ local function get_repo_url_from_sl_path (path)
 end
 
 function Open_File_Cmd(params)
+	local open_cmd = "open"
+	local os = params.os
+	if os == "Linux" then
+		open_cmd = "xdg-open"
+	end
+
+	local url = Get_remote_file_url(params)
+
+	return open_cmd .. " '" .. url .. "'"
+end
+
+function Copy_File_Cmd(params)
+	local copy_cmd = "pbcopy"
+	local os = params.os
+	if os == "Linux" then
+		copy_cmd = "xclip -selection clipboard"
+	end
+
+	local url = Get_remote_file_url(params)
+
+	return "printf '" .. url .. "' | " .. copy_cmd
+end
+
+function Get_remote_file_url(params)
 	local absolute_filepath = params.absolute_filepath
 	local repo_root = params.repo_root
 	local line_number_start = params.line_number_start
 	local line_number_end = params.line_number_end
-	local os = params.os
 	local remote_path = params.remote_path
 	local ref = params.ref
-
-	local open_cmd = "open"
-	if os == "Linux" then
-		open_cmd = "xdg-open"
-	end
 
 	local relative_filepath = string.sub(absolute_filepath, string.len(repo_root) + 2)
 
@@ -76,8 +94,9 @@ function Open_File_Cmd(params)
 	end
 
 	local url = vim.fn.fnameescape("https://" ..
-	get_repo_url_from_sl_path(remote_path) .. "/blob/" .. ref .. "/" .. relative_filepath .. line_number_fragment)
-	return open_cmd .. " '" .. url .. "'"
+		get_repo_url_from_sl_path(remote_path) .. "/blob/" .. ref .. "/" .. relative_filepath .. line_number_fragment
+	)
+	return url
 end
 
 function Get_open_file_cmd(line1, line2)
@@ -85,11 +104,22 @@ function Get_open_file_cmd(line1, line2)
 	return Open_File_Cmd(params)
 end
 
+function Get_copy_file_cmd(line1, line2)
+	local params = get_params(line1, line2)
+	return Copy_File_Cmd(params)
+end
+
 function Open_file(lines)
 	local cmd = Get_open_file_cmd(lines.line1, lines.line2)
 	vim.cmd("!" .. cmd)
 end
 vim.api.nvim_create_user_command("OpenFile", Open_file, {range = true, nargs=0})
+
+function Copy_file(lines)
+	local cmd = Get_copy_file_cmd(lines.line1, lines.line2)
+	vim.cmd("!" .. cmd)
+end
+vim.api.nvim_create_user_command("CopyFile", Copy_file, {range = true })
 
 --- TESTS
 local function test_get_repo_url_from_remote_path()
@@ -113,6 +143,19 @@ local function test_open_file_helper()
 		repo_root = "~/dotfiles", line_number_start = 42, line_number_end = 69, os = "Darwin", remote_path = "git@github.com/vegerot/dotfiles",
 		ref = "main" })
 	Assert_equals(cmd3, "open 'https://github.com/vegerot/dotfiles/blob/main/.config/nvim/lua/open-remote.lua\\#L42-L69'")
+end
+
+local function test_copy_file_helper()
+	local cmd = Copy_File_Cmd({ absolute_filepath = "~/dotfiles/.config/nvim/lua/open-remote.lua",
+		repo_root = "~/dotfiles", line_number_start = 69, os = "Linux", remote_path = "git@github.com/vegerot/dotfiles",
+		ref = "main" })
+	Assert_equals(cmd, "printf 'https://github.com/vegerot/dotfiles/blob/main/.config/nvim/lua/open-remote.lua\\#L69' | xclip -selection clipboard")
+
+	local cmd2 = Copy_File_Cmd({ absolute_filepath = "~/dotfiles/.config/nvim/lua/open-remote.lua",
+		repo_root = "~/dotfiles", line_number_start = 69, os = "Darwin", remote_path = "git@github.com/vegerot/dotfiles",
+		ref = "main" })
+	Assert_equals(cmd2, "printf 'https://github.com/vegerot/dotfiles/blob/main/.config/nvim/lua/open-remote.lua\\#L69' | pbcopy")
+
 end
 
 -- run with `open-remote-test` script
@@ -151,6 +194,7 @@ vim.api.nvim_create_user_command("OpenRemoteTestE2eVisualSelectRange", e2e_test_
 local function test()
 	test_get_repo_url_from_remote_path()
 	test_open_file_helper()
+	test_copy_file_helper()
 	print("✅")
 end
 -- jank: run tests with `:w | source % | OpenRemoteTest`
