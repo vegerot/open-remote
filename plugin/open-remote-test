@@ -106,12 +106,12 @@ function test_visual_select_range() {
 
 test() {
 	set -x
-	test_visual_select_range
 	unit_tests
 	e2e_test_1
 	test_commit_with_multiple_bookmarks
 	test_with_repo_thats_not_cwd
 	e2e_test_2
+	test_visual_select_range
 
 	printf "\n\n✅\n"
 }
