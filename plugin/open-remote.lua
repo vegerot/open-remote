@@ -211,10 +211,3 @@ function Assert_equals(got, want)
 	end
 end
 
-function Assert_not_equals(got, no_want)
-	if got == no_want then
-		local no_want_string = no_want == nil and "nil" or no_want
-		print("Expected to not be: " .. no_want_string)
-		assert(false)
-	end
-end
