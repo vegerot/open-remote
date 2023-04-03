@@ -119,7 +119,7 @@ function Copy_file(lines)
 	local cmd = Get_copy_file_cmd(lines.line1, lines.line2)
 	vim.cmd("!" .. cmd)
 end
-vim.api.nvim_create_user_command("CopyFile", Copy_file, {range = true })
+vim.api.nvim_create_user_command("CopyFile", Copy_file, {range = true, nargs=0})
 
 --- TESTS
 local function test_get_repo_url_from_remote_path()
