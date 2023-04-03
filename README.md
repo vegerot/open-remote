@@ -55,15 +55,18 @@ $ nvim open-remote.lua
 
 ## TODO
 (in approximately the order of priority)
-- add `CopyFile` (which copies the URL)
-- support ranges (can visual select multiple lines and open that range)
-- detect if `ref` is pushed to remote.  If not, then find the most recent
+- [x] add `CopyFile` (which copies the URL) (landed in 5cc1dc0e8)
+- [x] support ranges (can visual select multiple lines and open that range) (landed in 9d6d497a)
+- [ ] detect if `ref` is pushed to remote.  If not, then find the most recent
   ref/branch that has been pushed and use that instead
-- support git
-- choose remote
-- Windows support
-- customize how to open browser (e.g. default browser)
-- `OpenBlame`
+	- when ref is not pushed to remote, detect if the lines you are trying to
+	  open are different on remote.  If so, log a warning like "warning: the
+	  lines you are trying to open are different on remote"
+- [ ] support git
+- [ ] choose remote
+- [ ] Windows support
+- [ ] customize how to open browser (e.g. default browser)
+- [ ] `OpenBlame`
 
 ## Better project names
 - OpenTheSource
