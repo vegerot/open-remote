@@ -1,16 +1,39 @@
 --- PLUGIN
-local function strip_trailing_newline(str)
-	if (string.sub(str, string.len(str)) == "\n") then
-		return string.sub(str, 0, string.len(str) - 1)
+function Open_file(lines)
+	local cmd = Get_open_file_cmd(lines.line1, lines.line2)
+	vim.cmd("!" .. cmd)
+end
+vim.api.nvim_create_user_command("OpenFile", Open_file,
+                                 {range = true, nargs = 0})
+
+function Get_open_file_cmd(line1, line2)
+	local params = Get_params(line1, line2)
+	return Open_File_Cmd(params)
+end
+
+function Copy_file(lines)
+	local cmd = Get_copy_file_cmd(lines.line1, lines.line2)
+	vim.cmd("!" .. cmd)
+end
+vim.api.nvim_create_user_command("CopyFile", Copy_file,
+                                 {range = true, nargs = 0})
+
+function Get_copy_file_cmd(line1, line2)
+	local params = Get_params(line1, line2)
+	return Copy_File_Cmd(params)
+end
+
+function Get_params(line1, line2)
+	local function strip_trailing_newline(str)
+		if (string.sub(str, string.len(str)) == "\n") then
+			return string.sub(str, 0, string.len(str) - 1)
+		end
+		return str
 	end
-	return str
-end
+	local function sl(cmd, cwd)
+		return strip_trailing_newline(vim.fn.system("sl --cwd=" .. cwd .. " " .. cmd))
+	end
 
-local function sl(cmd, cwd)
-	return strip_trailing_newline(vim.fn.system("sl --cwd=" .. cwd .. " " .. cmd))
-end
-
-local function get_params(line1, line2)
 	local absolute_filepath = vim.fn.expand("%:p")
 	local absolute_directory_path = vim.fn.expand("%:p:h")
 	local repo_root = sl('root', absolute_directory_path)
@@ -41,27 +64,9 @@ local function get_params(line1, line2)
 	}
 end
 
-local function get_repo_url_from_sl_path(path)
-	local function trim_to(str, pattern)
-		local start = string.find(str, pattern)
-		if start then return string.sub(str, start + string.len(pattern)) end
-		return str
-	end
-
-	local repo_url = path
-	repo_url = trim_to(repo_url, "://")
-	repo_url = trim_to(repo_url, "git@")
-
-	-- calculating the length of this pattern ("%.git") is non-trivial
-	-- and it's only used once so do it the long way
-	local repo_url_end = string.find(repo_url, "%.git")
-	if repo_url_end then repo_url = string.sub(repo_url, 0, repo_url_end - 1) end
-	return repo_url
-end
-
 function Open_File_Cmd(params)
-	local open_cmd = "open"
 	local os = params.os
+	local open_cmd = "open"
 	if os == "Linux" then open_cmd = "xdg-open" end
 
 	local url = Get_remote_file_url(params)
@@ -95,6 +100,26 @@ function Get_remote_file_url(params)
 		line_number_fragment = line_number_fragment .. "-L" .. line_number_end
 	end
 
+	local function get_repo_url_from_sl_path(path)
+		local function trim_to(str, pattern)
+			local start = string.find(str, pattern)
+			if start then return string.sub(str, start + string.len(pattern)) end
+			return str
+		end
+
+		local repo_url = path
+		repo_url = trim_to(repo_url, "://")
+		repo_url = trim_to(repo_url, "git@")
+
+		-- calculating the length of this pattern ("%.git") is non-trivial
+		-- and it's only used once so do it the long way
+		local repo_url_end = string.find(repo_url, "%.git")
+		if repo_url_end then repo_url = string.sub(repo_url, 0, repo_url_end - 1) end
+		return repo_url
+	end
+
+	-- this scheme works on GitHub (github.com and enterprise) and GitLab
+	-- TODO: test other git hosting providers (e.g. BitBucket)
 	local url = vim.fn.fnameescape("https://" ..
 		                               get_repo_url_from_sl_path(remote_path) ..
 		                               "/blob/" .. ref .. "/" .. relative_filepath ..
@@ -102,40 +127,8 @@ function Get_remote_file_url(params)
 	return url
 end
 
-function Get_open_file_cmd(line1, line2)
-	local params = get_params(line1, line2)
-	return Open_File_Cmd(params)
-end
-
-function Get_copy_file_cmd(line1, line2)
-	local params = get_params(line1, line2)
-	return Copy_File_Cmd(params)
-end
-
-function Open_file(lines)
-	local cmd = Get_open_file_cmd(lines.line1, lines.line2)
-	vim.cmd("!" .. cmd)
-end
-vim.api.nvim_create_user_command("OpenFile", Open_file,
-                                 {range = true, nargs = 0})
-
-function Copy_file(lines)
-	local cmd = Get_copy_file_cmd(lines.line1, lines.line2)
-	vim.cmd("!" .. cmd)
-end
-vim.api.nvim_create_user_command("CopyFile", Copy_file,
-                                 {range = true, nargs = 0})
-
 --- TESTS
-local function test_get_repo_url_from_remote_path()
-	Assert_equals(get_repo_url_from_sl_path(
-		              "ssh://git@gecgithub01.walmart.com/ce-orchestration/ce-smartlists.git"),
-	              "gecgithub01.walmart.com/ce-orchestration/ce-smartlists")
-	Assert_equals(get_repo_url_from_sl_path(
-		              "https://github.com/facebook/sapling.git"),
-	              "github.com/facebook/sapling")
-end
-
+---- UNIT TESTS
 local function test_open_file_helper()
 	local cmd = Open_File_Cmd({
 		absolute_filepath = "~/dotfiles/.config/nvim/lua/open-remote.lua",
@@ -198,6 +191,21 @@ local function test_copy_file_helper()
 
 end
 
+-- run tests automatically: `nmap <leader>t :w \| source % \| OpenRemoteTest <CR>`
+local function test()
+	test_open_file_helper()
+	test_copy_file_helper()
+	print("✅")
+end
+-- jank: run tests with `:w | source % | OpenRemoteTest`
+vim.api.nvim_create_user_command("OpenRemoteTest", test, {nargs = 0})
+
+function Open_Remote_Test()
+	test()
+	os.exit()
+end
+
+---- E2E TESTS
 -- run with `open-remote-test` script
 local function e2e_test()
 	local cmd = Get_open_file_cmd()
@@ -233,20 +241,6 @@ end
 vim.api.nvim_create_user_command("OpenRemoteTestE2eVisualSelectRange",
                                  e2e_test_visual_select_range,
                                  {nargs = 0, range = true})
-
--- run tests automatically: `nmap <leader>t :w \| source % \| OpenRemoteTest <CR>`
-local function test()
-	test_get_repo_url_from_remote_path()
-	test_open_file_helper()
-	test_copy_file_helper()
-	print("✅")
-end
--- jank: run tests with `:w | source % | OpenRemoteTest`
-vim.api.nvim_create_user_command("OpenRemoteTest", test, {nargs = 0})
-function Open_Remote_Test()
-	test()
-	os.exit()
-end
 
 function Assert_equals(got, want)
 	if got ~= want then
