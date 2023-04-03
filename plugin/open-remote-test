@@ -100,7 +100,7 @@ function test_visual_select_range() {
 		sl debugremotebookmark main .
 	}
 	setup_e2e_test
-	# open file to line 2, select lines 2-3, open remote
+	# open file to line 2, select lines 2-4, open remote
 	nvim -u NONE foo.txt +"source $PLUGIN_PATH" +2 +'execute "norm Vjj:OpenRemoteTestE2eVisualSelectRange\<CR>"'
 }
 
