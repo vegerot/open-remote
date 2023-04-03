@@ -15,7 +15,7 @@ local function get_params(line1, line2)
 	local absolute_directory_path = vim.fn.expand("%:p:h")
 	local repo_root = sl('root', absolute_directory_path)
 	local line_number_start = line1 and line1 or vim.fn.line(".")
-	local line_number_end = line2 ~= line1 and line2 or nil
+	local line_number_end = line2
 
 	local os = strip_trailing_newline(vim.fn.system("uname"))
 	-- TODO: prompt if multiple paths (or just use `default`?)
@@ -91,7 +91,7 @@ function Get_remote_file_url(params)
 	                                     string.len(repo_root) + 2)
 
 	local line_number_fragment = "#L" .. line_number_start
-	if line_number_end then
+	if line_number_end and line_number_end ~= line_number_start then
 		line_number_fragment = line_number_fragment .. "-L" .. line_number_end
 	end
 
